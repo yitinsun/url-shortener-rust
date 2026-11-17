@@ -21,7 +21,8 @@ Build a lightweight **URL Shortener microservice**. The service turns a long HTT
   `ttlInDays` is optional. The example value `365` is **not** the default.
 
 * **Behavior:**
-  * Reject `longUrl` that is missing, not HTTP/HTTPS, longer than **2048** characters, contains script payloads, or whose host matches this service’s own public host (**self-loop**). Those cases return **400**.
+  * Reject `longUrl` that is missing, not HTTP/HTTPS, longer than **2048** characters, contains a script payload, or whose host matches this service’s own public host (**self-loop**). Those cases return **400**.
+  * A script payload is the lowercase substring `<script` anywhere in the trimmed URL, or a trimmed URL that starts with `javascript:` or `data:` (ASCII case-insensitive). The JSON `message` is `longUrl contains a disallowed payload`. HTML elements in `longUrl` are a separate **400** from `specs/brownfield/03-security-jsoup.md`, with `message` `longUrl contains disallowed HTML`. A query string that only contains `&` is not HTML.
   * **Idempotency:** If an **active** (not expired) row already exists for the exact same `longUrl` string, return that row. Do **not** insert a duplicate. If the client sends a different `ttlInDays` while the existing mapping is still active, **ignore the new TTL** and return the existing `shortCode` / `expiresAt`.
   * If a row exists for that `longUrl` but is **expired**, create a **new** mapping (new id, new short code, new expiry).
   * New codes are unique **5 to 7 character** Base62 strings derived from the numeric id.
@@ -43,8 +44,8 @@ Build a lightweight **URL Shortener microservice**. The service turns a long HTT
 * **Behavior:**
   * If the row exists and `expires_at` is in the future, return **302 Found** with `Location: <longUrl>`.
   * Do **not** use **301**. Analytics/click counting is **out of v1**, but 302 keeps a future counter possible.
-  * If the code is missing or expired, return **404** with a friendly HTML page (not JSON, not Axum’s plain-text default).
-  Expired reads return 404 immediately. A background cleanup job may delete stale rows later; cleanup is not required on the request path.
+  * If the code is missing or expired, return **404** with `Content-Type: text/html; charset=utf-8`. The page title and the visible heading are **Link not found**. The explanation is **This short link is missing or has expired.** The page shows the request path with `<`, `&`, and `"` escaped, and links to `POST /api/v1/shorten`, `/swagger-ui.html`, and `/short/{code}`. The same page is used for an illegal path (`specs/brownfield/02-legal-paths.md`). It is not JSON and it is not Axum’s plain-text default.
+  * Expired reads return 404 immediately. A background cleanup job may delete stale rows later; cleanup is not required on the request path. The job runs every **3600 seconds** and deletes at most **500** expired rows per pass.
 
 ### 2.3 Expiration & TTL Management
 

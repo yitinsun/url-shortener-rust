@@ -116,7 +116,7 @@ One `IntoResponse` error type owns the create-API JSON. Shape:
 | Situation | HTTP | Body | Trigger |
 |:----------|:-----|:-----|:--------|
 | Malformed URL, self-loop, oversize, bad `ttlInDays` | **400** | JSON | Validation error on the write path |
-| Short code missing or expired | **404** | Friendly HTML | Redirect path finds no active row |
+| Short code missing or expired | **404** | HTML titled **Link not found**, with the escaped path and links to `POST /api/v1/shorten`, `/swagger-ui.html`, and `/short/{code}` | Redirect path finds no active row |
 | Database timeout or lock failure | **503** | JSON | SQLx / pool error mapped in the error type |
 
 JSON field names are camelCase, matching `specs/contracts/openapi.yaml`.
@@ -127,7 +127,7 @@ JSON field names are camelCase, matching `specs/contracts/openapi.yaml`.
 |:-----|:--------------|
 | 32-bit id exhaustion | `BIGINT` primary key. |
 | Sequential code guessing | **Accepted in v1.** Documented limitation; salt/HMAC is a re-plan (high-impact). |
-| Malicious destination | RFC 3986 HTTP(S) validation, max 2048 chars, reject javascript/data schemes, reject host equal to `APP_BASE_URL` host. **No** Safe Browsing API in v1. |
-| Expired row bloat | Tokio interval task. Parameterized `DELETE FROM url_mappings WHERE expires_at < ? LIMIT ?`. Do not build that statement with `format!`. Redirect still 404s on `expires_at < now` even if the row is not deleted yet. |
+| Malicious destination | RFC 3986 HTTP(S) validation, max 2048 chars. **400** when the lowercase URL contains `<script`, or the trimmed URL starts with `javascript:` or `data:`. **400** `longUrl contains disallowed HTML` when the value parses as HTML (`specs/brownfield/03-security-jsoup.md`). A query `&` alone is not HTML. Reject a host equal to the `APP_BASE_URL` host. **No** Safe Browsing API in v1. |
+| Expired row bloat | Tokio task every **3600 seconds**. Each pass runs parameterized `DELETE FROM url_mappings WHERE expires_at < ? LIMIT ?` with the limit bound to **500**. Do not build that statement with `format!`. Redirect still 404s on `expires_at < now` even if the row is not deleted yet. |
 
 Self-loop: parse `longUrl` host and compare case-insensitively to the host of `APP_BASE_URL`.

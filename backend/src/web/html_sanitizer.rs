@@ -6,10 +6,9 @@ impl HtmlSanitizer {
         if value.trim().is_empty() {
             return false;
         }
-        let cleaned = ammonia::Builder::empty().clean(value).to_string();
-        let changed = cleaned != value;
-        let elements = fragment_has_elements(value);
-        changed || elements
+        // Ammonia escapes `&` in ordinary query strings, so a changed
+        // serialization is not enough. Reject markup the parser sees as HTML.
+        fragment_has_elements(value)
     }
 }
 
@@ -25,6 +24,12 @@ mod tests {
     fn plain_url_is_safe_and_markup_is_unsafe() {
         assert!(!HtmlSanitizer::looks_unsafe("https://example.com/system-design"));
         assert!(!HtmlSanitizer::looks_unsafe("https://example.com/path"));
+        assert!(!HtmlSanitizer::looks_unsafe(
+            "https://example.com/search?q=rust&lang=en"
+        ));
+        assert!(!HtmlSanitizer::looks_unsafe(
+            "https://www.google.com/search?q=weather+today&sca_esv=d692c529a49cacda&sxsrf=AKL5yDgYdS29-XsLWACkqg-AdaNBYoCJiw%3A1794927563865&source=hp&ei=y2v8asSAMoutmtkPge7oyQ8&iflsig=AHSINFcAAAAAavx522ARvCQUIIQe3RX5ck_E1MTJpLFP&oq=weath&gs_lp=Egdnd3Mtd2l6IgV3ZWF0aCoQCAIYgAQYigUYQxixAxiDATITEAAYgAQYigUYQxixAxiDARjJAzINEAAYgAQYigUYQxixAzIQEAAYgAQYigUYQxixAxiDATIIEAAYgAQYkgMyDhAAGIAEGLEDGIMBGJIDMhAQABiABBiKBRhDGLEDGIMBMhMQLhiABBiKBRhDGLEDGMcBGNEDMgsQABiABBixAxiDATILEAAYgAQYsQMYgwEyChAAGIAEGIoFGENIrnBQ7ydYmUVwAXgAkAEAmAE4oAGKAqoBATW4AQHIAQD4AQGYAgagAswCqAIKwgIHECMY6gIYJ8ICBBAjGCfCAhAQLhiABBiKBRhDGLEDGIMBwgIREC4YgAQYsQMYgwEYxwEY0QPCAhYQLhiABBiKBRhDGLEDGIMBGMcBGNEDwgINEAAYgAQYigUYQxi0B5gDEfEFXxhT_gOYCT2SBwE2oAfQLLIHATW4B7sCwgcFMi0zLjPIBzCACAE&sclient=gws-wiz"
+        ));
         assert!(!HtmlSanitizer::looks_unsafe(""));
         assert!(!HtmlSanitizer::looks_unsafe("   "));
         assert!(HtmlSanitizer::looks_unsafe(

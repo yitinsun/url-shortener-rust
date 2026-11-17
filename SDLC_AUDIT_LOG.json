@@ -150,5 +150,37 @@
     "upstream_dependency": "specs/brownfield/04-refine.md",
     "upstream_dependency_hash": "f9cc1c42baba2cf0c616b006c905c6c3556b81248a27f2490ef46473881f0831",
     "rationale": "Stage 6 has not produced backend/Dockerfile or a root docker-compose.yml. The command result is recorded and no image is claimed."
+  },
+  {
+    "timestamp": "2026-11-17T15:22:06Z",
+    "stage": "REPAIR",
+    "action_taken": "Stopped treating an ordinary query string as disallowed HTML. looks_unsafe now rejects a longUrl only when the fragment parses as HTML.",
+    "upstream_dependency": "specs/brownfield/03-security-jsoup.md",
+    "upstream_dependency_hash": "a14987b84c9a0543bf148fed786f05a1aac19ac2f6dd79213f162b07231d3601",
+    "rationale": "Ammonia rewrites & to &amp; while serializing text, so https://example.com/search?q=rust&lang=en compared unequal and returned 400. Markup such as script, img, and b is still rejected."
+  },
+  {
+    "timestamp": "2026-11-17T15:23:30Z",
+    "stage": "TESTING",
+    "action_taken": "Checked the reported Google search longUrl. It is 751 characters, https, ttlInDays 100, and looks_unsafe is false.",
+    "upstream_dependency": "specs/brownfield/03-security-jsoup.md",
+    "upstream_dependency_hash": "a14987b84c9a0543bf148fed786f05a1aac19ac2f6dd79213f162b07231d3601",
+    "rationale": "The query string contains & and no HTML tags. The sanitizer unit test now includes that URL and passes."
+  },
+  {
+    "timestamp": "2026-11-17T15:27:58Z",
+    "stage": "REQUIREMENTS",
+    "action_taken": "Named the script-payload rule, the Link not found page, and the 3600-second / 500-row cleanup in PRD.md.",
+    "upstream_dependency": "specs/greenfield/PRD.md",
+    "upstream_dependency_hash": "50703cffb0cc33331c8a3daf2089437a6034450d17b13e1a27f8be5adbaa1b76",
+    "rationale": "The readiness review left these three decisions unnamed. The sentences match the checks and copy already in the API."
+  },
+  {
+    "timestamp": "2026-11-17T15:27:58Z",
+    "stage": "ARCHITECTURE",
+    "action_taken": "Named the same cleanup interval, batch size, <script rule, and HTML 404 in SYSTEM_DESIGN.md.",
+    "upstream_dependency": "specs/greenfield/SYSTEM_DESIGN.md",
+    "upstream_dependency_hash": "a7a1182e52b5a32efeeec1576601739fb15e4bb7df3076296bb25236e9f9f01f",
+    "rationale": "A generator no longer has to invent the hourly batch or the 404 heading. The numbers are the ones cleanup.rs and error.rs already use."
   }
 ]

@@ -327,6 +327,7 @@ async fn helpers_reject_bad_input_and_round_trip_ids() {
     assert!(!PublicAccess::is_documented("/"));
     assert!(!PublicAccess::is_documented("/nope"));
     assert!(!HtmlSanitizer::looks_unsafe("https://example.com/path"));
+    assert!(!HtmlSanitizer::looks_unsafe("https://example.com/search?q=rust&lang=en"));
     assert!(!HtmlSanitizer::looks_unsafe(""));
     assert!(!HtmlSanitizer::looks_unsafe("   "));
     assert!(HtmlSanitizer::looks_unsafe("https://example.com/<script>alert(1)</script>"));

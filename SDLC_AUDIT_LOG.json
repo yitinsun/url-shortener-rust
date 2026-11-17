@@ -1,0 +1,186 @@
+[
+  {
+    "timestamp": "2026-11-17T04:10:00Z",
+    "stage": "COMPLIANCE",
+    "action_taken": "Read GATE2_APPROVAL.txt containing [APPROVED: yitin] and started the greenfield Rust API.",
+    "upstream_dependency": "specs/greenfield/ORCHESTRATION_MANIFEST.md",
+    "upstream_dependency_hash": "e4c758e3ba86c8d3005c3f98f65198832b69f1beefd5a2accef368c134f23292",
+    "rationale": "Gate 2 is the human lock that allows backend/Cargo.toml, backend/src, and backend/sql. The approval line matches the engineer id used on the reference project."
+  },
+  {
+    "timestamp": "2026-11-17T04:12:00Z",
+    "stage": "IMPLEMENTATION",
+    "action_taken": "Created backend/Cargo.toml and backend/sql/schema.sql for the url-shortener crate and the url_mappings table.",
+    "upstream_dependency": "specs/greenfield/SYSTEM_DESIGN.md",
+    "upstream_dependency_hash": "50df707d62bab9615c599a7b4ab131af5ac630497c29c500d39f1060ba57fbe4",
+    "rationale": "The table, prefix index, and AUTO_INCREMENT start at 56800235 are the persistence contract. sqlx features include mysql-rsa so MySQL 8 caching_sha2_password can authenticate."
+  },
+  {
+    "timestamp": "2026-11-17T04:12:00Z",
+    "stage": "IMPLEMENTATION",
+    "action_taken": "Created backend/src/lib.rs, backend/src/main.rs, backend/src/config.rs, and backend/src/schema.rs.",
+    "upstream_dependency": "specs/greenfield/TECH_STACK.md",
+    "upstream_dependency_hash": "1d09aeb3a04915ef13f12478c347f8400bd6e3b0dcb4b89414f76160b9aef1e6",
+    "rationale": "Config comes from the environment. Dev and test apply schema and disable TLS; prod requires DB_PASSWORD and ssl-mode=required. The library crate exists so integration tests and llvm-cov can cover it."
+  },
+  {
+    "timestamp": "2026-11-17T04:12:00Z",
+    "stage": "IMPLEMENTATION",
+    "action_taken": "Created backend/src/encoding/base62.rs with the 62-character alphabet.",
+    "upstream_dependency": "specs/greenfield/SYSTEM_DESIGN.md",
+    "upstream_dependency_hash": "50df707d62bab9615c599a7b4ab131af5ac630497c29c500d39f1060ba57fbe4",
+    "rationale": "Public codes are Base62 of the assigned id. encode(0) is 0. The pivot id 56800235 encodes to five characters."
+  },
+  {
+    "timestamp": "2026-11-17T04:12:00Z",
+    "stage": "IMPLEMENTATION",
+    "action_taken": "Created backend/src/repo/url_mapping.rs, backend/src/service/url_shortener.rs, and backend/src/schedule/cleanup.rs.",
+    "upstream_dependency": "specs/greenfield/SYSTEM_DESIGN.md",
+    "upstream_dependency_hash": "50df707d62bab9615c599a7b4ab131af5ac630497c29c500d39f1060ba57fbe4",
+    "rationale": "Idempotency compares the full long URL after a 255-character prefix lookup. Insert, LAST_INSERT_ID, and the short_code update share one transaction. Cleanup runs hourly and deletes at most 500 expired rows per pass with bound placeholders."
+  },
+  {
+    "timestamp": "2026-11-17T04:12:00Z",
+    "stage": "IMPLEMENTATION",
+    "action_taken": "Created backend/src/error.rs and backend/src/web handlers for POST /api/v1/shorten and GET /short/{shortCode}.",
+    "upstream_dependency": "specs/greenfield/PRD.md",
+    "upstream_dependency_hash": "a620d0b24ff9cbe129e139fd479506567beeb531643eb31633f30b725b1b696f",
+    "rationale": "Create returns 201 JSON. Redirect returns 302 with Location, never 301. Missing and expired codes return friendly HTML. Validation and database failures use the camelCase error body."
+  },
+  {
+    "timestamp": "2026-11-17T04:15:00Z",
+    "stage": "TESTING",
+    "action_taken": "Created backend/tests/url_shortener_api.rs and the library unit tests for config, Base62, the service, cleanup, and redirect errors.",
+    "upstream_dependency": "specs/greenfield/TESTING_PLAN.md",
+    "upstream_dependency_hash": "d1d8508e8d8abae22498082db5d032039a28712f1f49ba27baac368752fd5693",
+    "rationale": "HTTP tests run against MySQL 8.0 in Testcontainers. Unit tests cover validation, TTL, idempotency, and Base62 without a database. No test is ignored."
+  },
+  {
+    "timestamp": "2026-11-17T04:20:00Z",
+    "stage": "REPAIR",
+    "action_taken": "Kept the MySQL integration tests in the url-shortener package and called the public helpers from that binary so llvm-cov records them.",
+    "upstream_dependency": "specs/greenfield/TESTING_PLAN.md",
+    "upstream_dependency_hash": "d1d8508e8d8abae22498082db5d032039a28712f1f49ba27baac368752fd5693",
+    "rationale": "The first Gate 4 run measured 66.48% lines because the library test binary was not instrumented. A later run omitted the integration tests and measured 68.94%. The integration-test process executes the instrumented library, which is what the 80% bar counts."
+  },
+  {
+    "timestamp": "2026-11-17T04:27:55Z",
+    "stage": "TESTING",
+    "action_taken": "Passed cargo llvm-cov --fail-under-lines 80 from backend/. Line coverage is 80.86% (435 of 538 lines). 25 library tests and 5 integration tests passed, with zero ignored.",
+    "upstream_dependency": "specs/greenfield/TESTING_PLAN.md",
+    "upstream_dependency_hash": "d1d8508e8d8abae22498082db5d032039a28712f1f49ba27baac368752fd5693",
+    "rationale": "Gate 4 requires 100% test success and at least 80% line coverage. The summary TOTAL line is the measured ratio."
+  },
+  {
+    "timestamp": "2026-11-17T06:08:00Z",
+    "stage": "IMPLEMENTATION",
+    "action_taken": "Added utoipa 6.0.0 and utoipa-swagger-ui 10.0.2 after [APPROVED: yitin] swagger. Mounted /swagger-ui.html, /swagger-ui/, /v3/api-docs, and /v3/api-docs.yaml. The document lists only POST /api/v1/shorten.",
+    "upstream_dependency": "specs/brownfield/01-add-swagger.md",
+    "upstream_dependency_hash": "9225432839cb759750e11ba4e7a61a9f5ee204231604b73b35d4f03fdb357d94",
+    "rationale": "Swagger publishes the existing create API. Dev and test enable it by default; prod stays off unless OPENAPI_ENABLED=true. The yaml feature of utoipa supplies GET /v3/api-docs.yaml. GET /short/{shortCode} is not in the document."
+  },
+  {
+    "timestamp": "2026-11-17T06:21:27Z",
+    "stage": "TESTING",
+    "action_taken": "Passed cargo llvm-cov --fail-under-lines 80 from backend/ after the Swagger playbook. Line coverage is 81.77% (489 of 598 lines). 26 library tests and 6 integration tests passed, with zero ignored.",
+    "upstream_dependency": "specs/brownfield/01-add-swagger.md",
+    "upstream_dependency_hash": "9225432839cb759750e11ba4e7a61a9f5ee204231604b73b35d4f03fdb357d94",
+    "rationale": "The playbook keeps the 80% line bar. The new test checks the UI title, the OpenAPI 3 document, the YAML document, and that the redirect path is absent."
+  },
+  {
+    "timestamp": "2026-11-17T06:32:15Z",
+    "stage": "IMPLEMENTATION",
+    "action_taken": "Added backend/src/web/legal_path.rs after [APPROVED: yitin] Legal paths. LegalPathLayer wraps the finished router. Illegal URLs return the shared HTML 404.",
+    "upstream_dependency": "specs/brownfield/02-legal-paths.md",
+    "upstream_dependency_hash": "6a3f034084dea2f7288e5cee9795615707dc27cf354b872700e6442dfea13b6a",
+    "rationale": "POST /api/v1/shorten, GET /short/{shortCode} for a 1-10 character Base62 code, and the Swagger documents stay reachable. Every other URL ends as the friendly HTML page and does not fall through to a redirect or a JSON error."
+  },
+  {
+    "timestamp": "2026-11-17T06:36:05Z",
+    "stage": "TESTING",
+    "action_taken": "Passed cargo llvm-cov --fail-under-lines 80 from backend/ after the legal-path playbook. Line coverage is 83.15% (538 of 647 lines). 28 library tests and 7 integration tests passed, with zero ignored.",
+    "upstream_dependency": "specs/brownfield/02-legal-paths.md",
+    "upstream_dependency_hash": "6a3f034084dea2f7288e5cee9795615707dc27cf354b872700e6442dfea13b6a",
+    "rationale": "The playbook keeps the 80% line bar. The new cases cover an active redirect, the shared HTML 404, illegal URLs, POST create, and the OpenAPI document."
+  },
+  {
+    "timestamp": "2026-11-17T13:23:00Z",
+    "stage": "IMPLEMENTATION",
+    "action_taken": "Added ammonia 4.2.5 and PublicAccessLayer plus HtmlSanitizeLayer after [APPROVED: yitin] Security and Jsoup. LegalPathLayer stays outermost.",
+    "upstream_dependency": "specs/brownfield/03-security-jsoup.md",
+    "upstream_dependency_hash": "a14987b84c9a0543bf148fed786f05a1aac19ac2f6dd79213f162b07231d3601",
+    "rationale": "Documented routes stay public and return no 401. POST /api/v1/shorten rejects longUrl when ammonia's empty cleaner changes the value or the fragment contains HTML."
+  },
+  {
+    "timestamp": "2026-11-17T13:23:30Z",
+    "stage": "REPAIR",
+    "action_taken": "Imported IntoResponse in backend/src/web/html_sanitize.rs so the HTML finding can use the existing 400 response.",
+    "upstream_dependency": "specs/brownfield/03-security-jsoup.md",
+    "upstream_dependency_hash": "a14987b84c9a0543bf148fed786f05a1aac19ac2f6dd79213f162b07231d3601",
+    "rationale": "The first library build failed to compile because AppError::into_response needs the Axum trait in scope. The error shape stayed the existing JSON body."
+  },
+  {
+    "timestamp": "2026-11-17T13:28:22Z",
+    "stage": "REPAIR",
+    "action_taken": "Reran cargo llvm-cov --fail-under-lines 80 after the first summary found no profraw files. The rerun used a short CARGO_TARGET_DIR so the instrumented build could emit profile data.",
+    "upstream_dependency": "specs/brownfield/03-security-jsoup.md",
+    "upstream_dependency_hash": "a14987b84c9a0543bf148fed786f05a1aac19ac2f6dd79213f162b07231d3601",
+    "rationale": "The test suite had already passed. The missing profile data was a measurement failure, so the same gate was run again without ignoring tests or lowering the 80% bar."
+  },
+  {
+    "timestamp": "2026-11-17T13:43:24Z",
+    "stage": "TESTING",
+    "action_taken": "Passed cargo llvm-cov --fail-under-lines 80 from backend/ after the security playbook. Line coverage is 91.21% (1286 of 1410 lines). 33 library tests and 8 integration tests passed, with zero ignored.",
+    "upstream_dependency": "specs/brownfield/03-security-jsoup.md",
+    "upstream_dependency_hash": "a14987b84c9a0543bf148fed786f05a1aac19ac2f6dd79213f162b07231d3601",
+    "rationale": "The playbook keeps the 80% line bar. Plain URLs still create a short link. HTML and script in longUrl return the existing 400 JSON, and documented routes stay public."
+  },
+  {
+    "timestamp": "2026-11-17T13:47:33Z",
+    "stage": "OBSERVABILITY",
+    "action_taken": "Replaced README.md and updated Outputs in specs/scenarios/01-greenfield.md and specs/scenarios/02-brownfield.md after [APPROVED: yitin] Docs and metrics. SDLC_METRICS.json keeps line_coverage_ratio 0.9121 from the 2026-11-17T13:43:24Z llvm-cov run. stage1_epoch_ms, stage7_epoch_ms, and end_to_end_latency_ms stay null.",
+    "upstream_dependency": "specs/brownfield/04-refine.md",
+    "upstream_dependency_hash": "f9cc1c42baba2cf0c616b006c905c6c3556b81248a27f2490ef46473881f0831",
+    "rationale": "Stage 7 is open, so the epoch fields stay empty. The scenario indexes now name files and the measured coverage that are already in the workspace."
+  },
+  {
+    "timestamp": "2026-11-17T13:47:33Z",
+    "stage": "OBSERVABILITY",
+    "action_taken": "Ran docker compose up --build once. Exit code 1. stderr: no configuration file provided: not found.",
+    "upstream_dependency": "specs/brownfield/04-refine.md",
+    "upstream_dependency_hash": "f9cc1c42baba2cf0c616b006c905c6c3556b81248a27f2490ef46473881f0831",
+    "rationale": "Stage 6 has not produced backend/Dockerfile or a root docker-compose.yml. The command result is recorded and no image is claimed."
+  },
+  {
+    "timestamp": "2026-11-17T15:22:06Z",
+    "stage": "REPAIR",
+    "action_taken": "Stopped treating an ordinary query string as disallowed HTML. looks_unsafe now rejects a longUrl only when the fragment parses as HTML.",
+    "upstream_dependency": "specs/brownfield/03-security-jsoup.md",
+    "upstream_dependency_hash": "a14987b84c9a0543bf148fed786f05a1aac19ac2f6dd79213f162b07231d3601",
+    "rationale": "Ammonia rewrites & to &amp; while serializing text, so https://example.com/search?q=rust&lang=en compared unequal and returned 400. Markup such as script, img, and b is still rejected."
+  },
+  {
+    "timestamp": "2026-11-17T15:23:30Z",
+    "stage": "TESTING",
+    "action_taken": "Checked the reported Google search longUrl. It is 751 characters, https, ttlInDays 100, and looks_unsafe is false.",
+    "upstream_dependency": "specs/brownfield/03-security-jsoup.md",
+    "upstream_dependency_hash": "a14987b84c9a0543bf148fed786f05a1aac19ac2f6dd79213f162b07231d3601",
+    "rationale": "The query string contains & and no HTML tags. The sanitizer unit test now includes that URL and passes."
+  },
+  {
+    "timestamp": "2026-11-17T15:27:58Z",
+    "stage": "REQUIREMENTS",
+    "action_taken": "Named the script-payload rule, the Link not found page, and the 3600-second / 500-row cleanup in PRD.md.",
+    "upstream_dependency": "specs/greenfield/PRD.md",
+    "upstream_dependency_hash": "50703cffb0cc33331c8a3daf2089437a6034450d17b13e1a27f8be5adbaa1b76",
+    "rationale": "The readiness review left these three decisions unnamed. The sentences match the checks and copy already in the API."
+  },
+  {
+    "timestamp": "2026-11-17T15:27:58Z",
+    "stage": "ARCHITECTURE",
+    "action_taken": "Named the same cleanup interval, batch size, <script rule, and HTML 404 in SYSTEM_DESIGN.md.",
+    "upstream_dependency": "specs/greenfield/SYSTEM_DESIGN.md",
+    "upstream_dependency_hash": "a7a1182e52b5a32efeeec1576601739fb15e4bb7df3076296bb25236e9f9f01f",
+    "rationale": "A generator no longer has to invent the hourly batch or the 404 heading. The numbers are the ones cleanup.rs and error.rs already use."
+  }
+]

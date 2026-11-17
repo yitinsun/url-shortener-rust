@@ -1,0 +1,23 @@
+---
+description: v1 URL shortener Rust API stack, schema, and test contract
+globs: backend/**
+alwaysApply: false
+---
+
+# Backend implementation contract
+
+Read `specs/greenfield/PRD.md`, `SYSTEM_DESIGN.md`, `TECH_STACK.md`, and `TESTING_PLAN.md` before changing matching files. The HTTP contract is `specs/contracts/openapi.yaml`.
+
+## Stack
+
+Rust stable (edition 2024), Axum 0.8.x, Tokio, SQLx 0.9.x for MySQL 8.0, Serde. Crate root is `backend/`. Line coverage uses `cargo-llvm-cov` at ≥ 80%. utoipa, utoipa-swagger-ui, and ammonia are present only under signed playbooks. Routes stay public: no auth extractor, no CSRF middleware. Do not add Redis, a migration crate, a rate-limiter, Safe Browsing clients, JWT, or OAuth.
+
+API DTOs are Serde structs with camelCase JSON names. SQL uses `sqlx::query` / `query_as` with `.bind()` only. Secrets come from environment variables as in `TECH_STACK.md`.
+
+## Domain
+
+Modules live under `backend/src/`. `url_mappings` DDL and seed `56800235` come from `SYSTEM_DESIGN.md` (`backend/sql/schema.sql`, utf8mb4). Short codes are plain Base62(id). Idempotent create for an **active** exact `longUrl`. Default TTL 730 days. `GET /short/{shortCode}` returns 302, never 301. Missing or expired codes return **404 HTML**, not JSON and not Axum’s plain-text default.
+
+## Tests
+
+Mandatory modules and cases in `TESTING_PLAN.md`. Integration tests boot the Axum router against MySQL 8.0 in Testcontainers, not a mock HTTP layer. Gate 4 command: `cargo llvm-cov --fail-under-lines 80` from `backend/`.

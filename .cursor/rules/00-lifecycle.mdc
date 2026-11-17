@@ -1,0 +1,28 @@
+---
+description: Gated SDLC — Gate 2 lock, stages, audit, high-impact stops
+alwaysApply: true
+---
+
+# Lifecycle governance
+
+Follow `AGENTS.md` and `specs/greenfield/INSTRUCTIONS.md` + `ORCHESTRATION_MANIFEST.md` on every chat.
+
+## Gate 2
+
+If `GATE2_APPROVAL.txt` is missing or lacks `[APPROVED: …]`, do not create or edit `backend/Cargo.toml`, `backend/Cargo.lock`, `backend/src/**`, or `backend/sql/**`. Refuse and ask for approval. Specs, Docker files, and this rule may be edited.
+
+## Stages
+
+Implement only the current stage. Do not skip Gate 3 (schema + Base62 + Axum crate) before `cargo llvm-cov --fail-under-lines 80` in `backend/`. On test failure: fix code, never `#[ignore]`, max 3 retries, then stop. Do not start Stage 6.
+
+## Lineage
+
+Append `SDLC_AUDIT_LOG.json` and update `SDLC_METRICS.json` per `INSTRUCTIONS.md`. Do not invent coverage or claim generated files in `specs/scenarios/01-greenfield.md`.
+
+## High impact — halt
+
+Changing SQL tables after Gate 2, adding undeclared `backend/Cargo.toml` dependencies, or dropping the 80% / mandatory test bar requires a new human signature. Re-plan to Stage 1 if `PRD.md` or `SYSTEM_DESIGN.md` changes mid-run.
+
+## Frontend
+
+`specs/frontend/` and `20-frontend-react.mdc` may exist. Do not generate `frontend/src/**` or `frontend/package.json` during the Rust stages. The client does not change the OpenAPI contract.
